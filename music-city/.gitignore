@@ -2,3 +2,4 @@ node_modules/
 frames/
 preview/
 *.pyc
+frames_prev/
