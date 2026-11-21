@@ -605,10 +605,49 @@ const nameHomes = [];
     const per = Math.ceil((order.length - q) / (nt.length - ni));
     for (let j = 0; j < per && q < order.length; j++, q++) {
       const L = LETTERS[order[q]], col = NAME_COL[L.ci], g = new THREE.Group(), t0 = t + 0.05 * j;
-      g.add(mesh(rbox(0.8, 0.6, 0.74, 0.1), mat(0xfffaf0), 0, 0.3, 0));
-      const roof = mesh(GEO.cone4, mat(col, { roughness: 0.3 }), 0, 0.6 + 0.25, 0); roof.scale.set(0.72, 0.54, 0.68); roof.rotation.y = Math.PI / 4; g.add(roof);
-      g.add(mesh(rbox(0.17, 0.28, 0.05, 0.03), mat(col), 0, 0.14, 0.375));
-      for (const sx of [-1, 1]) g.add(mesh(rbox(0.14, 0.14, 0.05, 0.03), winMat, sx * 0.25, 0.38, 0.375));
+      // eight kinds of building; the roof keeps the letter's colour so the name stays readable
+      const light = NAME_LIGHT[L.ci], cream = 0xfffaf0, v = Math.floor(r2() * 8), roofM = mat(col, { roughness: 0.3 });
+      const win = (x, y, z, w = 0.14, h = 0.14) => g.add(mesh(rbox(w, h, 0.05, 0.03), winMat, x, y, z));
+      const door = (z, h = 0.28) => g.add(mesh(rbox(0.17, h, 0.05, 0.03), mat(col), 0, h / 2, z));
+      if (v === 0) {            // cottage
+        g.add(mesh(rbox(0.8, 0.6, 0.74, 0.1), mat(cream), 0, 0.3, 0));
+        const roof = mesh(GEO.cone4, roofM, 0, 0.85, 0); roof.scale.set(0.72, 0.54, 0.68); roof.rotation.y = Math.PI / 4; g.add(roof);
+        door(0.375); win(-0.25, 0.38, 0.375); win(0.25, 0.38, 0.375);
+      } else if (v === 1) {     // tall town house
+        g.add(mesh(rbox(0.66, 1.1, 0.66, 0.1), mat(light), 0, 0.55, 0));
+        const roof = mesh(GEO.cone4, roofM, 0, 1.32, 0); roof.scale.set(0.6, 0.46, 0.6); roof.rotation.y = Math.PI / 4; g.add(roof);
+        door(0.335); for (const y of [0.5, 0.84]) for (const sx of [-1, 1]) win(sx * 0.17, y, 0.335);
+      } else if (v === 2) {     // round tower
+        const b = mesh(GEO.cyl, mat(cream), 0, 0.55, 0); b.scale.set(0.34, 1.1, 0.34); g.add(b);
+        const roof = mesh(GEO.cone16, roofM, 0, 1.42, 0); roof.scale.set(0.44, 0.66, 0.44); g.add(roof);
+        door(0.33); win(0, 0.68, 0.33);
+        const ball = mesh(GEO.sphere, goldMat, 0, 1.78, 0); ball.scale.setScalar(0.06); g.add(ball);
+      } else if (v === 3) {     // domed hall
+        const b = mesh(GEO.cyl, mat(light), 0, 0.3, 0); b.scale.set(0.42, 0.6, 0.42); g.add(b);
+        const dome = mesh(GEO.dome, roofM, 0, 0.6, 0); dome.scale.set(0.44, 0.4, 0.44); g.add(dome);
+        const ball = mesh(GEO.sphere, goldMat, 0, 1.03, 0); ball.scale.setScalar(0.06); g.add(ball);
+        door(0.41, 0.3); win(-0.24, 0.36, 0.34); win(0.24, 0.36, 0.34);
+      } else if (v === 4) {     // little shop with an awning
+        g.add(mesh(rbox(0.82, 0.56, 0.7, 0.08), mat(cream), 0, 0.28, 0));
+        g.add(mesh(rbox(0.9, 0.12, 0.78, 0.05), roofM, 0, 0.62, 0));
+        const aw = mesh(rbox(0.74, 0.06, 0.3, 0.03), mat(light), 0, 0.44, 0.46); aw.rotation.x = 0.45; g.add(aw);
+        door(0.355, 0.26); win(-0.26, 0.24, 0.355, 0.18, 0.2); win(0.26, 0.24, 0.355, 0.18, 0.2);
+      } else if (v === 5) {     // apartment block
+        g.add(mesh(rbox(0.74, 1.3, 0.62, 0.08), mat(cream), 0, 0.65, 0));
+        g.add(mesh(rbox(0.8, 0.1, 0.68, 0.04), roofM, 0, 1.34, 0));
+        g.add(mesh(rbox(0.2, 0.16, 0.2, 0.04), mat(light), 0.18, 1.46, -0.1));
+        door(0.315, 0.24); for (const y of [0.46, 0.76, 1.06]) for (const sx of [-1, 1]) win(sx * 0.19, y, 0.315, 0.15, 0.15);
+      } else if (v === 6) {     // clock tower
+        g.add(mesh(rbox(0.5, 1.45, 0.5, 0.07), mat(light), 0, 0.725, 0));
+        const roof = mesh(GEO.cone4, roofM, 0, 1.72, 0); roof.scale.set(0.5, 0.56, 0.5); roof.rotation.y = Math.PI / 4; g.add(roof);
+        const face = mesh(GEO.cyl, mat(0xffffff), 0, 1.12, 0.255); face.scale.set(0.15, 0.04, 0.15); face.rotation.x = Math.PI / 2; g.add(face);
+        const ball = mesh(GEO.sphere, goldMat, 0, 2.03, 0); ball.scale.setScalar(0.06); g.add(ball);
+        door(0.255, 0.3); win(0, 0.62, 0.255);
+      } else {                  // barn with a rounded roof
+        g.add(mesh(rbox(0.8, 0.5, 0.7, 0.08), mat(light), 0, 0.25, 0));
+        const roof = mesh(GEO.cyl, roofM, 0, 0.5, 0); roof.scale.set(0.37, 0.82, 0.37); roof.rotation.z = Math.PI / 2; g.add(roof);
+        g.add(mesh(rbox(0.3, 0.34, 0.05, 0.03), mat(cream), 0, 0.17, 0.355)); win(0, 0.62, 0.36, 0.13, 0.13);
+      }
       g.position.set(L.x, 0, L.z); addPop(g, t0, 0.55, 0.8);
       for (const [px, pz] of L.pads) { const pad = new THREE.Mesh(padGeo, mat(NAME_LIGHT[L.ci], { roughness: 0.6 })); pad.position.set(px, 0.022, pz); pad.receiveShadow = true; addPop(pad, t0, 0.4); }
       sparkle(t0, L.x, 0.8, L.z, 5, 0.8);
