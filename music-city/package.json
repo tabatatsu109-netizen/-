@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@expo-google-fonts/m-plus-rounded-1c": "^0.4.4",
     "three": "^0.187.0"
   }
 }

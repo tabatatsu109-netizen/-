@@ -42,10 +42,11 @@ export function buildCamera(ctx) {
   // scene 7: red runs the golden chimes to the big bell, then pull back to the full city
   const B = bigHit, c7 = hits7(ctx);
   keys.push({ t: 40.4, pos: [c7.x + 5.5, 6.5, c7.z + 10.5], tgt: [c7.x - 0.6, 0.9, c7.z - 2.2], fov: 44 });
-  keys.push({ t: 43.0, pos: [B.x + 3.2, 7.2, B.z + 11.5], tgt: [B.x + 0.4, 1.2, B.z - 2.6], fov: 46 });
-  const fin = { pos: [0, 27, 39], tgt: [0, 2.0, 0.6], fov: 52 };
-  keys.push({ t: 44.0, pos: [B.x * 0.5 + 1.0, 17, B.z + 17.5], tgt: [B.x * 0.4, 1.2, B.z * 0.5], fov: 48.5 });
-  keys.push({ t: 45.0, ...fin });
+  keys.push({ t: 42.0, pos: [B.x + 3.2, 7.2, B.z + 11.5], tgt: [B.x + 0.4, 1.2, B.z - 2.6], fov: 46 });
+  // pull up and back: the whole city, and the name the houses were spelling all along
+  keys.push({ t: 43.15, pos: [B.x * 0.4, 44, B.z + 27], tgt: [0, 0.6, 12.5], fov: 43 });
+  keys.push({ t: 44.25, pos: [0, 90, 45], tgt: [0, 0, 14.2], fov: 40 });
+  keys.push({ t: 45.0, pos: [0, 93, 45.5], tgt: [0, 0, 14.2], fov: 40 });
   keys.sort((a, b) => a.t - b.t);
   const n = keys.length;
   const comp = (get) => {

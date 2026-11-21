@@ -10,6 +10,7 @@ const params = new URLSearchParams(location.search);
 const W = +(params.get('w') || 1080), H = +(params.get('h') || 1920);
 const DEBUG_CAM = params.get('cam');
 const NOTES = await (await fetch('./notes.json')).json();
+const LETTERS = await (await fetch('./letters.json')).json();
 
 // ---------------------------------------------------------------- utilities
 function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -228,13 +229,13 @@ const sky = new THREE.Mesh(new THREE.SphereGeometry(400, 32, 16), new THREE.Shad
   fragmentShader: 'uniform vec3 top; uniform vec3 mid; uniform vec3 bot; varying vec3 vP; void main(){ float h=vP.y; vec3 c = h>0.0 ? mix(mid, top, smoothstep(0.0,0.75,h)) : mix(mid, bot, smoothstep(0.0,-0.55,h)); gl_FragColor=vec4(c,1.0);\n#include <colorspace_fragment>\n }'
 }));
 scene.add(sky);
-scene.fog = new THREE.Fog(0xd6eeff, 70, 260);
+scene.fog = new THREE.Fog(0xd6eeff, 130, 420);
 
 const hemi = new THREE.HemisphereLight(0xeaf6ff, 0xffe6c9, 1.15); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff4e2, 2.3);
-sun.position.set(-17, 34, 21); sun.castShadow = true;
+sun.target.position.set(0, 0, 13); sun.position.set(-17 * 1.4, 34 * 1.4, 13 + 21 * 1.4); sun.castShadow = true; scene.add(sun.target);
 sun.shadow.mapSize.set(4096, 4096); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03; sun.shadow.radius = 5;
-Object.assign(sun.shadow.camera, { left: -24, right: 24, top: 24, bottom: -24, near: 1, far: 110 });
+Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 38, bottom: -38, near: 1, far: 160 });
 scene.add(sun);
 
 const matCache = new Map();
@@ -257,6 +258,13 @@ const rbox = (w, h, d, r = 0.08) => new RoundedBoxGeometry(w, h, d, 3, Math.min(
   isl.castShadow = false; scene.add(isl);
   const under = mesh(new THREE.LatheGeometry([[R_ISL - 0.24, -1.02], [R_ISL - 2.5, -2.62], [R_ISL * 0.55, -5.02], [R_ISL * 0.22, -7.22], [0, -8.22]].map(p => new THREE.Vector2(p[0] + 0.01, p[1])), 96), mat(0xffd9c2, { roughness: 0.8 }));
   under.castShadow = false; scene.add(under);
+}
+{
+  const w = 39, d = 32.5, r = 9, zc = 29.6, sh = new THREE.Shape();
+  sh.moveTo(-w / 2 + r, -d / 2); sh.lineTo(w / 2 - r, -d / 2); sh.quadraticCurveTo(w / 2, -d / 2, w / 2, -d / 2 + r); sh.lineTo(w / 2, d / 2 - r); sh.quadraticCurveTo(w / 2, d / 2, w / 2 - r, d / 2); sh.lineTo(-w / 2 + r, d / 2); sh.quadraticCurveTo(-w / 2, d / 2, -w / 2, d / 2 - r); sh.lineTo(-w / 2, -d / 2 + r); sh.quadraticCurveTo(-w / 2, -d / 2, -w / 2 + r, -d / 2);
+  const g = new THREE.ExtrudeGeometry(sh, { depth: 0.7, bevelEnabled: true, bevelThickness: 0.3, bevelSize: 0.3, bevelSegments: 4, curveSegments: 16 });
+  const top = new THREE.Mesh(g, mat(PAL.cream, { roughness: 0.75 })); top.rotation.x = Math.PI / 2; top.position.set(0, -0.304, zc); top.receiveShadow = true; scene.add(top);
+  const under = new THREE.Mesh(g, mat(0xffd9c2, { roughness: 0.8 })); under.rotation.x = Math.PI / 2; under.scale.set(0.9, 0.88, 2.2); under.position.set(0, -1.2, zc); scene.add(under);
 }
 const riverDir = () => { const ph = PHI0 + TH_RIVER; return { x: Math.cos(ph), z: Math.sin(ph) }; };
 const RIVER_R0 = 4.6, RIVER_W = 1.5;
@@ -581,10 +589,33 @@ noteList.forEach((t, i) => {
   if (kind) placeStructure(kind, t, px, pz, side);
   // infill: the wider city keeps growing with every note of the second half
   if (t > 24.1 && t < 44) {
-    const k = t < 30 ? (i % 2 === 0 ? 1 : 0) : t < 40 ? 1 : 2;
+    const k = t < 40 ? (i % 2 === 0 ? 1 : 0) : 1;
     for (let j = 0; j < k; j++) { let c = cityPts[Math.floor(rnd() * cityPts.length)], ang = rnd() * 6.28, rr = 1.5 + rnd() * 4.5; if (t >= 30 && rnd() < 0.7) { c = [0, 0]; rr = 3.8 + Math.sqrt(rnd()) * (R_ISL - 5.2); } placeStructure(pick(['house', 'house', 'tree', 'house', 'tree', 'bush']), t + 0.04 * (j + 1), c[0] + Math.cos(ang) * rr, c[1] + Math.sin(ang) * rr, 0); }
   }
 });
+// ---- the name, spelled out by little houses on the front plaza
+const NAME_COL = [0xff7f7f, 0xffc247, 0x5fb0ff, 0x55cf9c, 0xa987f0, 0xff86b6], NAME_LIGHT = [0xffcfcf, 0xffe9b5, 0xc6e2ff, 0xc2f0dc, 0xdfd2fb, 0xffd3e4];
+const nameHomes = [];
+{
+  const order = LETTERS.map((_, i) => i); const r2 = mulberry32(555);
+  for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(r2() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+  const nt = noteList.filter(t => t > 24.1 && t < 43.5); let q = 0;
+  const padGeo = new THREE.CylinderGeometry(0.64, 0.64, 0.04, 20);
+  nt.forEach((t, ni) => {
+    const per = Math.ceil((order.length - q) / (nt.length - ni));
+    for (let j = 0; j < per && q < order.length; j++, q++) {
+      const L = LETTERS[order[q]], col = NAME_COL[L.ci], g = new THREE.Group(), t0 = t + 0.05 * j;
+      g.add(mesh(rbox(0.8, 0.6, 0.74, 0.1), mat(0xfffaf0), 0, 0.3, 0));
+      const roof = mesh(GEO.cone4, mat(col, { roughness: 0.3 }), 0, 0.6 + 0.25, 0); roof.scale.set(0.72, 0.54, 0.68); roof.rotation.y = Math.PI / 4; g.add(roof);
+      g.add(mesh(rbox(0.17, 0.28, 0.05, 0.03), mat(col), 0, 0.14, 0.375));
+      for (const sx of [-1, 1]) g.add(mesh(rbox(0.14, 0.14, 0.05, 0.03), winMat, sx * 0.25, 0.38, 0.375));
+      g.position.set(L.x, 0, L.z); addPop(g, t0, 0.55, 0.8);
+      for (const [px, pz] of L.pads) { const pad = new THREE.Mesh(padGeo, mat(NAME_LIGHT[L.ci], { roughness: 0.6 })); pad.position.set(px, 0.022, pz); pad.receiveShadow = true; addPop(pad, t0, 0.4); }
+      sparkle(t0, L.x, 0.8, L.z, 5, 0.8);
+      nameHomes.push({ x: L.x, z: L.z });
+    }
+  });
+}
 lamps.sort((a, b) => Math.hypot(b.x, b.z) - Math.hypot(a.x, a.z));
 lamps.forEach((l, i) => { l.group = Math.floor(i * 7 / lamps.length); l.obj.userData.bulb.material = lampMats[l.group]; });
 
@@ -677,11 +708,12 @@ function updateSparkles(t) {
   lamps.forEach(l => { const on = clamp((t - (40 + l.group * 0.5)) / 0.25); if (on > 0) put(l.x, 0.88, l.z, 0.55 * on * (1 + 0.08 * Math.sin(t * 7 + l.x)), [1, 0.9, 0.5], 0.5 * on); });
   const fin = clamp((t - 44) / 0.3);
   if (fin > 0) {
+    nameHomes.forEach((hm, i) => put(hm.x, 0.5, hm.z + 0.3, 1.5 * fin * (1 + 0.08 * Math.sin(t * 6 + i)), [1, 0.9, 0.55], 0.5 * fin));
     homes.forEach((hm, i) => put(hm.x, 0.55, hm.z, 1.05 * fin * (1 + 0.06 * Math.sin(t * 5 + i)), [1, 0.86, 0.5], 0.42 * fin));
     for (let i = 0; i < 24; i++) { const a = i / 24 * 6.283 + wheel.rot.rotation.z; put(Math.cos(a) * wheel.RW, wheel.C.y + Math.sin(a) * wheel.RW, 0.5, 0.5 * fin, [1, 0.95, 0.7], 0.8 * fin); }
     for (let i = 0; i < 8; i++) { const v = new THREE.Vector3(); wheel.gondolas[i].parent.getWorldPosition(v); put(v.x, v.y, v.z + 0.45, 0.8 * fin, [1, 0.9, 0.55], 0.55 * fin); }
     const r = mulberry32(4242);
-    for (let i = 0; i < 150; i++) { const a = r() * 6.283, rr = Math.sqrt(r()) * (R_ISL - 1), ph = r() * 6.28, tw = 0.5 + 0.5 * Math.sin((t - 44) * (7 + r() * 6) + ph); put(Math.cos(a) * rr, 0.6 + r() * 4.5 + (t - 44) * 0.5, Math.sin(a) * rr, (0.16 + r() * 0.2) * fin * (0.4 + tw), SPK_COLS[Math.floor(r() * 5)], fin * (0.35 + 0.65 * tw)); }
+    for (let i = 0; i < 260; i++) { const onName = i >= 130, a = r() * 6.283, rr = Math.sqrt(r()) * (R_ISL - 1), ph = r() * 6.28, tw = 0.5 + 0.5 * Math.sin((t - 44) * (7 + r() * 6) + ph), nx = (r() - 0.5) * 34, nz = 20.5 + r() * 23; put(onName ? nx : Math.cos(a) * rr, 0.6 + r() * 4.5 + (t - 44) * 0.5, onName ? nz : Math.sin(a) * rr, (0.3 + r() * 0.4) * fin * (0.4 + tw), SPK_COLS[Math.floor(r() * 5)], fin * (0.35 + 0.65 * tw)); }
   }
   spkGeo.setDrawRange(0, n); spkGeo.attributes.position.needsUpdate = true; spkGeo.attributes.size.needsUpdate = true; spkGeo.attributes.col.needsUpdate = true;
 }
